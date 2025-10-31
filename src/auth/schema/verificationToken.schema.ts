@@ -3,7 +3,7 @@ import { Document, Schema as MongooseSchema } from 'mongoose';
 
 export type VerificationTokenDocument = VerificationToken & Document;
 
-@Schema({ timestamps: true })  // Adds createdAt/updatedAt
+@Schema({ timestamps: true }) 
 export class VerificationToken {       
   @Prop({ required: true })
   token: string;
