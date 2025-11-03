@@ -17,8 +17,7 @@ export class User {
   @Prop({ default: false })
   emailVerified: boolean;
 
- @Prop({ type: MongooseSchema.Types.ObjectId })
-  _id?: string;
-}
+  _id: string;
+} 
 
 export const UserSchema = SchemaFactory.createForClass(User);

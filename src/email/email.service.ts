@@ -21,7 +21,7 @@ export class EmailService {
       const html = this.getVerificationEmailTemplate(name, verificationCode);
       
       const { data, error } = await this.resend.emails.send({
-        from: 'Acme <onboarding@resend.dev>', // Replace with your domain
+        from: `${process.env.EMAIL_FROM}`, // Replace with your domain  
         to: [email],
         subject: 'Verify Your Email Address',
         html: html,

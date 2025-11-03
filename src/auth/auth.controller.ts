@@ -3,7 +3,7 @@ import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
 import { CreateUserDto, LoginUserDto, VerifyEmailDto } from './dto/user';
 
-@ApiTags('auth')
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private authService: AuthService) {} 
@@ -19,12 +19,12 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Login user and generate JWT token' })
-  @ApiBody({ type: LoginUserDto })
+  @ApiBody({ type: LoginUserDto }) 
   @ApiResponse({ 
     status: 200, 
     description: 'Login successful',
     schema: {
-      example: {
+      example: { 
         message: 'Login successful',
         user: { id: '507f1f77bcf86cd799439011', name: 'John Doe', email: 'john@example.com', age: 30 },
         token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
@@ -36,6 +36,7 @@ export class AuthController {
     try {
       return await this.authService.login(loginUserDto);
     } catch (error) {
+      console.log(error)
       if (error instanceof UnauthorizedException) { 
         throw error;
       }
@@ -54,7 +55,7 @@ export class AuthController {
 
   @Post("resend-verification")
   @ApiOperation({ summary: 'Resend email verification link' })
-  @ApiBody({ type: VerifyEmailDto })
+  @ApiBody({ type: VerifyEmailDto })   
   @ApiResponse({ status: 200, description: 'Verification email resent successfully' })
   @ApiResponse({ status: 400, description: 'Bad request (validation error)' })
   async resendVerification(@Body() verifyEmailDto: VerifyEmailDto) {

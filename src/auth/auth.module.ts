@@ -5,10 +5,14 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schema/user.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { EmailModule } from 'src/email/email.module';
+import { VerificationToken, VerificationTokenSchema } from './schema/verificationToken.schema';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: User.name, schema: UserSchema },
+      { name: VerificationToken.name, schema: VerificationTokenSchema },
+    ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,  // Use env var in production
       signOptions: { expiresIn: '24h' },
