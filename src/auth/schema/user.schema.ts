@@ -14,6 +14,9 @@ export class User {
   @Prop({ required: true })
   password: string;  // Hash this in production!
 
+  @Prop({ default: false })
+  emailVerified: boolean;
+
  @Prop({ type: MongooseSchema.Types.ObjectId })
   _id?: string;
 }

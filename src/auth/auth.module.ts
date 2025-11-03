@@ -4,6 +4,7 @@ import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './schema/user.schema';
 import { JwtModule } from '@nestjs/jwt';
+import { EmailModule } from 'src/email/email.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { JwtModule } from '@nestjs/jwt';
       secret: process.env.JWT_SECRET,  // Use env var in production
       signOptions: { expiresIn: '24h' },
     }),
+    EmailModule,
   ],
   providers: [AuthService],
   controllers: [AuthController]

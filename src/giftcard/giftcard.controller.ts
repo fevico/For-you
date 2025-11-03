@@ -58,7 +58,7 @@ export class GiftcardController {
   @ApiResponse({
     status: 200,
     description: 'Array of categories',
-    type: [CategoryDto],
+    type: [CategoryDto],  
   })
   async fetchCategories(@Req() req: Request) {
     return this.giftcardService.getCategories();

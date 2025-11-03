@@ -1,12 +1,12 @@
 import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { CreateUserDto, LoginUserDto } from './dto/user';
+import { CreateUserDto, LoginUserDto, VerifyEmailDto } from './dto/user';
 
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) {} 
 
   @Post('create')
   @ApiOperation({ summary: 'Create a new user account' })
@@ -41,5 +41,23 @@ export class AuthController {
       }
       throw new UnauthorizedException('Login failed');
     }
+  }
+
+  @Post("verify-email")
+  @ApiOperation({ summary: 'Verify user email' })
+  @ApiBody({ type: VerifyEmailDto })
+  @ApiResponse({ status: 200, description: 'Email verification successful' })
+  @ApiResponse({ status: 400, description: 'Bad request (validation error)' })
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
+  }
+
+  @Post("resend-verification")
+  @ApiOperation({ summary: 'Resend email verification link' })
+  @ApiBody({ type: VerifyEmailDto })
+  @ApiResponse({ status: 200, description: 'Verification email resent successfully' })
+  @ApiResponse({ status: 400, description: 'Bad request (validation error)' })
+  async resendVerification(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.authService.verifyEmail(verifyEmailDto);
   }
 }

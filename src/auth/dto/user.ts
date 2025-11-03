@@ -25,3 +25,8 @@ export class LoginUserDto {
   @MinLength(6)
   password: string;
 }
+
+export class VerifyEmailDto {
+  @IsEmail()
+  email: string;
+}

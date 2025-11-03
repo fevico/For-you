@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import { CreateUserDto, LoginUserDto } from './dto/user';
 import * as bcrypt from "bcrypt";
 import { JwtService } from '@nestjs/jwt';
+import { EmailService } from 'src/email/email.service';
 
 export interface JwtPayload {
   sub: string;  // User ID
@@ -14,7 +15,8 @@ export interface JwtPayload {
 export class AuthService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-    private jwtService: JwtService
+    private jwtService: JwtService,
+    private emailService: EmailService
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -22,7 +24,10 @@ export class AuthService {
     const hashedPassword = await bcrypt.hash(password, 10);
     const createdUser = new this.userModel({ name, email, password: hashedPassword, age });
     await createdUser.save();
-
+    // Send verification email logic to be implemented
+  const verificationCode = this.emailService.generateVerificationCode();  
+  // await this
+    await this.emailService.sendVerificationEmail(email, name, verificationCode);
     // Return user data without password
     const { password: _, ...userData } = createdUser.toObject();
     return { message: "User created successfully", user: userData };
@@ -68,4 +73,10 @@ export class AuthService {
     const payload: JwtPayload = { sub: userId };
     return this.jwtService.sign(payload);
   }
+
+  async verifyEmail(verifyEmailDto: { email: string }) {
+    const { email } = verifyEmailDto;
+    const user = await this.userModel.findOne({ email });   
+    // verify email token logic to be implemented
+  }  
 }

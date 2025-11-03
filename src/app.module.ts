@@ -6,6 +6,7 @@ import { ConfigModule } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GiftcardModule } from './giftcard/giftcard.module';
 import { PaymentModule } from './payment/payment.module';
+import { EmailModule } from './email/email.module';
 import * as Joi  from "joi"
 
 @Module({
@@ -18,7 +19,7 @@ import * as Joi  from "joi"
       }),
      }),  // Loads .env globally
     MongooseModule.forRoot(process.env.MONGODB_URI!),  // Connects to MongoDB
-    AuthModule, GiftcardModule, PaymentModule,
+    AuthModule, GiftcardModule, PaymentModule, EmailModule,
   ],
   controllers: [AppController],
   providers: [AppService],
