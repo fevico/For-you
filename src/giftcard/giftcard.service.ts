@@ -100,6 +100,7 @@ constructor(private readonly config: ConfigService) {}
 
     return response.json();
   }
+
   async getCategories(): Promise<any> {
     const token = await this.getAccessToken();
  
@@ -115,6 +116,50 @@ constructor(private readonly config: ConfigService) {}
     if (!response.ok) {
       const errText = await response.text();
       throw new Error(`Categories request failed (${response.status}): ${errText}`);
+    }
+
+    return response.json();
+  }
+
+  async getProducts(size?: number, page?: number, productName?: string): Promise<any> {
+
+    try {
+          const token = await this.getAccessToken();
+    const url = `https://giftcards-sandbox.reloadly.com/products?size=${size}&page=${page}&productName=${productName}&countryCode=US`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/com.reloadly.giftcards-v1+json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Product request failed (${response.status}): ${errText}`);
+    }
+
+    return response.json();
+  } catch (error) {
+    throw new Error('Failed to fetch products');
+  }
+}
+
+  async getProductById(productId: string): Promise<any> {
+    const token = await this.getAccessToken();
+
+    const url = `https://giftcards-sandbox.reloadly.com/products/${productId}`;
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/com.reloadly.giftcards-v1+json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const errText = await response.text();
+      throw new Error(`Product request failed (${response.status}): ${errText}`);
     }
 
     return response.json();

@@ -20,3 +20,16 @@ export class CategoryDto {
   @ApiProperty({ example: 'Digital' })
   name: string;
 }
+
+export class ProductDto {
+  @ApiProperty({ example: 12345 })
+  id: number;
+  @ApiProperty({ example: 'Amazon Gift Card' })
+  name: string;
+  @ApiProperty({ example: 'Amazon' })
+  brandName: string;
+  @ApiProperty({ example: 'USD' })
+  currencyCode: string;
+  @ApiProperty({ example: [25, 50, 100] })
+  denominations: number[];
+}

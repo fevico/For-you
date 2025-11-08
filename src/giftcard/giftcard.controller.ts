@@ -4,11 +4,12 @@ import {
   Get,
   HttpCode,
   Param,
+  Query,
   Req,
 } from '@nestjs/common';
 import { GiftcardService } from './giftcard.service';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CategoryDto, CountryDto } from './dto/giftcard.dto';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CategoryDto, CountryDto, ProductDto } from './dto/giftcard.dto';
 
 @Controller('giftcard')
 @ApiTags('Giftcard')
@@ -63,4 +64,64 @@ export class GiftcardController {
   async fetchCategories(@Req() req: Request) {
     return this.giftcardService.getCategories();
   }
+
+@Get('products')
+@HttpCode(200)
+@ApiOperation({ summary: 'Get gift-card products with optional filters' })
+@ApiQuery({
+  name: 'size',
+  required: false,
+  type: Number,
+  description: 'Number of items per page',
+  example: 10,
+})
+@ApiQuery({
+  name: 'page',
+  required: false,
+  type: Number,
+  description: 'Page number (0-indexed)',
+  example: 0,
+})
+@ApiQuery({
+  name: 'productName',
+  required: false,
+  type: String,
+  description: 'Filter by product name (partial match)',
+  example: 'Amazon',
+})
+@ApiResponse({
+  status: 200,
+  description: 'List of products',
+  type: [ProductDto], // or use a wrapper if paginated
+})
+@ApiResponse({ status: 404, description: 'Not found (if applicable)' })
+@ApiResponse({ status: 500, description: 'External API error' })
+async fetchProducts(
+  @Query('size') size?: number,
+  @Query('page') page?: number,
+  @Query('productName') productName?: string,
+) {
+  return this.giftcardService.getProducts(size, page, productName);
+}
+
+  @Get('product/:productId')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Get gift-card details by product ID' })
+  @ApiParam({
+    name: 'productId',
+    description: 'Unique identifier for the product',
+    example: '12345',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Product details',
+    type: ProductDto,
+  })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  async fetchProductById(
+    @Req() req: Request,
+    @Param('productId') productId: string,
+  ) {
+    return this.giftcardService.getProductById(productId);
+  } 
 }

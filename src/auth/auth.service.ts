@@ -123,7 +123,7 @@ async login(loginUserDto: LoginUserDto) {
     const { token, userId } = verifyEmailDto;
     try {
           const user = await this.userModel.findById(userId);
-
+              
     if (!user) {
       throw new UnauthorizedException('Invalid user');
     }
