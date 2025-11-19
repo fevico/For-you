@@ -45,42 +45,6 @@ export class AuthService {
     return { message: "User created successfully", user: userData };
   }
 
-  // async login(loginUserDto: LoginUserDto) {
-  //   const { email, password } = loginUserDto;
-    
-  //   // Use validateUser for proper hashing check
-  //   const userData = await this.validateUser(email, password);
-    
-  //   // Generate JWT token
-  //   const token = this.signToken(userData._id);  // sub is user ID
-    
-  //   return {
-  //     message: 'Login successful', 
-  //     user: userData,
-  //     token,
-  //   };
-  // }
-
-  // async validateUser(email: string, password: string) {
-  //   // Find user by email
-  //   const user = await this.userModel.findOne({ email });
-
-  //   if (!user) {
-  //     throw new UnauthorizedException('Invalid credentials');
-  //   }
-
-  //   // Compare password with hashed password
-  //   const passwordMatch = await bcrypt.compare(password, user.password);
-    
-  //   if (!passwordMatch) {
-  //     throw new UnauthorizedException('Invalid credentials');
-  //   }
-
-  //   // Return user data (excluding password)
-  //   const { password: _, ...userData } = user.toObject();
-  //   return userData;
-  // }
-
 async validateUser(email: string, password: string) {
   const user = await this.userModel.findOne({ email });
   if (!user) {
@@ -121,7 +85,7 @@ async login(loginUserDto: LoginUserDto) {
 
   async verifyEmail(verifyEmailDto: VerifyEmailDto) {
     const { token, userId } = verifyEmailDto;
-    try {
+    try { 
           const user = await this.userModel.findById(userId);
               
     if (!user) {

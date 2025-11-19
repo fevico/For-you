@@ -1,15 +1,19 @@
 import {
   BadRequestException,
+  Body,
   Controller,
   Get,
   HttpCode,
   Param,
+  Post,
   Query,
   Req,
+  UseGuards,
 } from '@nestjs/common';
 import { GiftcardService } from './giftcard.service';
-import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CategoryDto, CountryDto, ProductDto } from './dto/giftcard.dto';
+import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { CategoryDto, CountryDto, CreateOrderDto, OrderResponseDto, ProductDto, RedeemInstructionsDto } from './dto/giftcard.dto';
+import { AuthGuard } from 'src/guard/auth.guard';
 
 @Controller('giftcard')
 @ApiTags('Giftcard')
@@ -124,4 +128,40 @@ async fetchProducts(
   ) {
     return this.giftcardService.getProductById(productId);
   } 
+
+
+  // continuation 
+  @Post('orders')
+  @HttpCode(201)
+  @UseGuards(AuthGuard) // Optional: Protect with auth to track user orders
+  @ApiOperation({ summary: 'Purchase a gift card (create order)' })
+  @ApiBody({ type: CreateOrderDto })
+  @ApiResponse({
+    status: 201,
+    description: 'Order created successfully',
+    type: OrderResponseDto,
+  })
+  @ApiResponse({ status: 400, description: 'Invalid request or insufficient balance' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async createOrder(@Body() dto: CreateOrderDto) {
+    return this.giftcardService.createOrder(dto);
+  }
+
+  @Get('redeem-instructions/:productId')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Get redemption instructions for a product' })
+  @ApiParam({
+    name: 'productId',
+    description: 'Product ID from /products',
+    example: 'amazon-us-25',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Redemption steps',
+    type: RedeemInstructionsDto,
+  })
+  @ApiResponse({ status: 404, description: 'Product not found' })
+  async getRedeemInstructions(@Param('productId') productId: string) {
+    return this.giftcardService.getRedeemInstructions(productId);
+  }
 }
