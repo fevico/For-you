@@ -33,7 +33,7 @@ export class AuthService {
     const createdUser = new this.userModel({ username, email, password: hashedPassword });
     await createdUser.save();
     // Send verification email logic to be implemented 
-  const verificationCode = this.emailService.generateVerificationCode();  
+  const verificationCode = this.emailService.generateVerificationCode();   
   // await this
   await this.verificationTokenModel.deleteMany({ userId: createdUser._id }); // Remove old tokens if any
   const hashedToken = await bcrypt.hash(verificationCode, 10);

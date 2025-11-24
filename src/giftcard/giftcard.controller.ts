@@ -14,6 +14,7 @@ import { GiftcardService } from './giftcard.service';
 import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CategoryDto, CountryDto, CreateOrderDto, OrderResponseDto, ProductDto, RedeemInstructionsDto } from './dto/giftcard.dto';
 import { AuthGuard } from 'src/guard/auth.guard';
+import type { Request } from 'express';
 
 @Controller('giftcard')
 @ApiTags('Giftcard')
@@ -129,7 +130,7 @@ async fetchProducts(
     return this.giftcardService.getProductById(productId);
   } 
 
-
+      
   // continuation 
   @Post('orders')
   @HttpCode(201)
@@ -143,7 +144,9 @@ async fetchProducts(
   })
   @ApiResponse({ status: 400, description: 'Invalid request or insufficient balance' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async createOrder(@Body() dto: CreateOrderDto) {
+  async createOrder(@Body() dto: CreateOrderDto, @Req() req: Request) {
+    const userId = req.user?.id
+    console.log(userId)
     return this.giftcardService.createOrder(dto);
   }
 

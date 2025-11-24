@@ -5,22 +5,17 @@ export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })  // Adds createdAt/updatedAt
 export class User {
-  @Prop({ required: true, unique: true })
-  username: string;
-
-  @Prop({ required: true, unique: true })
-  email: string;
+  @Prop({ required: true, type: String })
+  product: string;
 
   @Prop({ required: true })
-  password: string;  // Hash this in production!
+  email: string;
 
-  @Prop({ default: false })
-  emailVerified: boolean;
+  @Prop({type: Number})
+  amount: number
 
-  @Prop({type: Number, default: 0})
-  balance: number
-
-  _id: string;
+  @Prop({type: String})
+  reference: string;
 } 
 
 export const UserSchema = SchemaFactory.createForClass(User);

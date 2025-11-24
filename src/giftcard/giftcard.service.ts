@@ -237,7 +237,7 @@ constructor(private readonly config: ConfigService) {}
     }
 
     return response.json();
-  }
+  } 
 
   private async waitForRedeemCode(orderId: string, token: string, maxAttempts = 10, delay = 2000): Promise<void> {
     for (let i = 0; i < maxAttempts; i++) {
@@ -267,7 +267,7 @@ constructor(private readonly config: ConfigService) {}
     if (!response.ok) {
       const errText = await response.text();
       throw new BadRequestException(`Redeem instructions fetch failed (${response.status}): ${errText}`);
-    }
+    }      
 
     return response.json();
   }
