@@ -268,7 +268,7 @@ constructor(private readonly config: ConfigService) {}
       const errText = await response.text();
       throw new BadRequestException(`Redeem instructions fetch failed (${response.status}): ${errText}`);
     }      
-
+ 
     return response.json();
   }
 }
