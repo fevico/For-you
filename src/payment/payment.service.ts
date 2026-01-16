@@ -36,12 +36,12 @@ export class PaymentService {
 
     private async hitpayPost<T = any>(path: string, body: any): Promise<T> {
     const { data } = await lastValueFrom(
-      this.httpService.post<T>(`${this.baseUrl}${path}`, body, {
+      this.httpService.post<T>(`${this.baseUrl}${path}`, body, { 
         headers: this.getHeaders(),
       }),
     );
-    return data;
-  }
+    return data;   
+  } 
 
   // Example usage
   // async createBeneficiary(...) {
@@ -82,7 +82,7 @@ export class PaymentService {
       id: response.data.id,
       url: response.data.url,
       status: response.data.status,
-    }
+    } 
    } catch (error) {
     this.logger.error('Error creating payment request', error);
     throw error;
