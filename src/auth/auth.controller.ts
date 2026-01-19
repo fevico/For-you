@@ -6,7 +6,7 @@ import { CreateUserDto, LoginUserDto, VerifyEmailDto } from './dto/user';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {} 
+  constructor(private authService: AuthService) {}  
 
   @Post('create')
   @ApiOperation({ summary: 'Create a new user account' })
@@ -54,7 +54,7 @@ export class AuthController {
   }
 
   @Post("resend-verification")
-  @ApiOperation({ summary: 'Resend email verification link' })
+  @ApiOperation({ summary: 'Resend email verification token' })
   @ApiBody({ type: VerifyEmailDto })   
   @ApiResponse({ status: 200, description: 'Verification email resent successfully' })
   @ApiResponse({ status: 400, description: 'Bad request (validation error)' })

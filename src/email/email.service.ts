@@ -26,7 +26,7 @@ export class EmailService {
         subject: 'Verify Your Email Address',
         html: html,
       });
-
+ 
       if (error) {
         throw new Error(`Resend error: ${error.message}`);
       }

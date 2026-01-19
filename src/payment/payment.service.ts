@@ -25,7 +25,7 @@ export class PaymentService {
   ) {
     this.apiKey = this.config.get<string>('HITPAY_API_KEY') ?? "";
     this.baseUrl = this.config.get<string>('HITPAY_BASE_URL') ?? ""; // e.g. `https://api.sandbox.hit-pay.com`
-  }
+  } 
       
   private getHeaders() {
     return {
