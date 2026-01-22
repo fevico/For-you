@@ -30,13 +30,6 @@ export class HitPayPaymentPayload {
   @IsEmail()
   email: string;
 
-  @ApiProperty({
-    example: 'TXN-20250119-001',
-    description: 'Unique transaction reference number',
-  })
-  @IsString()
-  referenceNumber: string;
-
   @ApiPropertyOptional({
     example: 'https://example.com/success',
     description: 'URL to redirect after successful payment',

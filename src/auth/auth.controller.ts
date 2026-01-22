@@ -55,7 +55,7 @@ export class AuthController {
 
   @Post("resend-verification")
   @ApiOperation({ summary: 'Resend email verification token' })
-  @ApiBody({ type: VerifyEmailDto })   
+  @ApiBody({ type: VerifyEmailDto }) 
   @ApiResponse({ status: 200, description: 'Verification email resent successfully' })
   @ApiResponse({ status: 400, description: 'Bad request (validation error)' })
   async resendVerification(@Body() verifyEmailDto: VerifyEmailDto) {

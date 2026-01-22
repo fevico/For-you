@@ -6,6 +6,7 @@ import { User, UserSchema } from 'src/auth/schema/user.schema';
 import { Transaction, TransactionSchema } from './schema/transaction.schema';
 import { ConfigModule } from '@nestjs/config';
 import { HttpModule } from '@nestjs/axios';
+import { JwtModule } from '@nestjs/jwt';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { HttpModule } from '@nestjs/axios';
     ]),
     ConfigModule,
     HttpModule,
+    JwtModule
   ],
   providers: [PaymentService],
   controllers: [PaymentController],

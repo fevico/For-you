@@ -10,45 +10,26 @@ export class Transaction {
   @Prop({ type: Types.ObjectId, ref: User.name, required: true })
   user: Types.ObjectId;
 
-  @Prop({ required: true })
-  hitpayTransferId: string;
+  @Prop({type: String, required: true})
+  referenceNumber: string;
 
-  @Prop({ type: Object, default: null })
-  beneficiary: any;  // store the beneficiary object from HitPay
+  @Prop({type: String, required: true})
+  email: string
 
   @Prop({ required: true })
   amount: number;
 
-  @Prop({ required: true })
+  @Prop({type: String, required: true })
   currency: string;
-
-  @Prop()
-  sourceCurrency: string;
-
-  @Prop()
-  sourceAmount: number;
-
-  @Prop({ type: Object, default: null })
-  fee: {
-    totalFee: number;
-    feeCurrency: string;
-    feePayer: string;
-  };
 
   @Prop({ type: String, enum: ['scheduled', 'processing', 'paid', 'failed', 'canceled'], default: 'scheduled' })
   status: string;
 
-  @Prop({ type: Date })
-  initiatedAt: Date;
+  @Prop({ type: String, required: false })
+  purpose: string;
 
-  @Prop({ type: Date })
+  @Prop({ type: Date, default: Date.now() })
   completedAt: Date;
-
-  @Prop({ type: String, required: false })
-  remark: string;
-
-  @Prop({ type: String, required: false })
-  reference: string;
 }
 
 export const TransactionSchema = SchemaFactory.createForClass(Transaction);
