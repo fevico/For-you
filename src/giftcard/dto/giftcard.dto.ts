@@ -10,11 +10,6 @@ import {
 } from 'class-validator';
 
 export class CountryDto {
-  @ApiProperty({
-    description: 'ISO-3166-1 alpha-2 country code',
-    example: 'US',
-  })
-  countryCode: string;
 
   @ApiProperty({
     description: 'Full country name',
@@ -82,17 +77,25 @@ export class CreateOrderDto {
     example: 'amazon-us-25',
     description: 'Product ID from /products endpoint',
   })
-  @IsString()
+  @IsNumber()
   @IsNotEmpty()
-  productId: string;
+  productId: number;
 
   @ApiProperty({
-    example: 50,
-    description: 'Value in local currency (must match product denomination)',
+    example: "$4",
+    description: 'Unit price',
   })
   @IsNumber()
-  @Min(1)
-  value: number;
+  @IsNotEmpty()
+  unitPrice: number;
+
+  @ApiProperty({
+    example: "2",
+    description: 'Quantity of product',
+  })
+  @IsNumber()
+  @IsNotEmpty()
+  quantity: number;
 
   @ApiProperty({
     example: 'user@example.com',

@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '@nestjs/config';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, Types } from 'mongoose';
+import { ClientSession, Model, Types } from 'mongoose';
 import { lastValueFrom } from 'rxjs';
 import { User, UserDocument } from 'src/auth/schema/user.schema';
 import { Transaction, TransactionDocument } from './schema/transaction.schema';
@@ -107,39 +107,6 @@ export class PaymentService {
     }
   }
 
-  // Call this from a controller / webhook route
-  // async handleHitpayWebhook(payload: any) {
-  //     const { reference_number, status } = payload;
-
-  //   const tx = await this.txModel.findOne({ referenceNumber: reference_number });
-
-  //   if (!tx) {
-  //     this.logger.error(`Transaction not found: ${ reference_number}`);
-  //     return;
-  //   }
-
-  //   // 🛑 Prevent double processing
-  //   if (tx.status === 'completed') {
-  //     return;
-  //   }
-
-  //   tx.status = status;
-
-  //   if (payload.paid_at) {
-  //     tx.completedAt = new Date(payload.paid_at);
-  //   }
-
-  //   await tx.save();
-
-  //   // ✅ Credit user ONCE
-  //   if (status === 'completed') {
-  //     const user = await this.userModel.findById(tx.user);
-  //     if (user) {
-  //       user.balance += tx.amount;
-  //       await user.save();
-  //     }
-  //   }
-  // }
 
   async handleHitpayWebhook(payload: any) {
     const { reference_number, status, paid_at } = payload; // Destructure with paid_at if present
@@ -190,6 +157,41 @@ export class PaymentService {
     }
   }
 
+  async withTransaction<T>(callback: (session: ClientSession) => Promise<T>): Promise<T> {
+    const session = await this.txModel.startSession();
+    session.startTransaction();
+
+    try {
+      const result = await callback(session);
+      await session.commitTransaction();
+      return result;
+    } catch (error) {
+      await session.abortTransaction();
+      throw error;
+    } finally {
+      session.endSession();
+    }
+  }
+
+  // Helper to create pending tx (used in purchase)
+  // async createPendingGiftCardTx(
+  //   userId: string,
+  //   dto: CreateOrderRequest,
+  //   amountNGN: number,
+  //   session: ClientSession,
+  // ): Promise<Transaction> {
+  //   const tx = new this.txModel({
+  //     user: userId,
+  //     type: TransactionType.GIFT_CARD_PURCHASE,
+  //     amount: amountNGN,
+  //     status: TransactionStatus.PENDING,
+  //     requestPayload: dto,
+  //     reloadlyCustomIdentifier: `order-${Date.now()}-${userId.slice(-6)}`, // unique for Reloadly
+  //   });
+
+  //   return tx.save({ session });
+  // }
+
   private generateShortRef(length = 10) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let result = '';
@@ -211,34 +213,42 @@ export class PaymentService {
     return resp;
   }
 
-  //   data: {
-  //     id: 'a0e67ee5-ff0d-484b-9def-137c2ef53f6a',
-  //     name: null,
-  //     email: 'user@example.com',
-  //     phone: null,
-  //     amount: '5,000.00',
-  //     currency: 'SGD',
-  //     is_currency_editable: false,
-  //     status: 'pending',
-  //     purpose: 'Wallet funding',
-  //     reference_number: null,
-  //     payment_methods: [ 'paynow_online' ],
-  //     url: 'https://securecheckout.sandbox.hit-pay.com/payment-request/@fa-business-consultancy-services/a0e67ee5-ff0d-484b-9def-137c2ef53f6a/checkout',
-  //     redirect_url: 'https://yourdomain.com/payment/success',
-  //     webhook: 'https://yourdomain.com/api/webhooks/hitpay',
-  //     send_sms: false,
-  //     send_email: false,
-  //     sms_status: 'pending',
-  //     email_status: 'pending',
-  //     allow_repeated_payments: false,
-  //     expiry_date: null,
-  //     address: null,
-  //     line_items: null,
-  //     executor_id: null,
-  //     created_at: '2026-01-23T05:45:19',
-  //     updated_at: '2026-01-23T05:45:19',
-  //     staff_id: null,
-  //     business_location_id: null
-  //   }
-  // }
+  // In your gift-card.service.ts or payment.service.ts
+
+// Example constants – adjust to your business
+private readonly MARKUP_PERCENTAGE = 8; // 8% profit + buffer for FX/fees
+private readonly FIXED_SERVICE_FEE_NGN = 200; // optional flat fee per order
+
+// You'll need a real FX rate source in production (e.g., from an API or cache)
+private async getFxRate(recipientCurrency: string): Promise<number> {
+  // Placeholder – in real app, fetch from exchangerate-api.com, your cache, or Reloadly's rate endpoint if available
+  // For sandbox testing:
+  const rates: Record<string, number> = {
+    USD: 1650, // 1 USD ≈ ₦1650
+    PHP: 28,   // 1 PHP ≈ ₦28
+    SGD: 1220, // 1 SGD ≈ ₦1220
+  };
+  return rates[recipientCurrency?.toUpperCase()] || 1600; // fallback to ~USD rate
+}
+
+// Main method
+// async calculateSellingPrice(dto: CreateOrder): Promise<number> {
+//   // Fetch product to get real currency & confirm unitPrice
+//   const token = await this.getAccessToken();
+//   const product = await this.getProductDetails(dto.productId, token);
+
+//   const faceValue = dto.unitPrice * (dto.quantity || 1); // e.g., 500 PHP
+//   const currency = product.recipientCurrencyCode || 'USD'; // from product details
+
+//   const fxRate = await this.getFxRate(currency); // 1 foreign unit → NGN
+
+//   const faceValueNGN = faceValue * fxRate;
+
+//   // Your selling price = face value in NGN + markup + optional fee
+//   const markupAmount = faceValueNGN * (this.MARKUP_PERCENTAGE / 100);
+//   const totalNGN = Math.ceil(faceValueNGN + markupAmount + this.FIXED_SERVICE_FEE_NGN);
+
+//   return totalNGN;
+// }
+
 }

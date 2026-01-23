@@ -11,8 +11,22 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { GiftcardService } from './giftcard.service';
-import { ApiBody, ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CategoryDto, CountryDto, CreateOrderDto, OrderResponseDto, ProductDto, RedeemInstructionsDto } from './dto/giftcard.dto';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import {
+  CategoryDto,
+  CountryDto,
+  CreateOrderDto,
+  OrderResponseDto,
+  ProductDto,
+  RedeemInstructionsDto,
+} from './dto/giftcard.dto';
 import { AuthGuard } from 'src/guard/auth.guard';
 import type { Request } from 'express';
 
@@ -32,6 +46,58 @@ export class GiftcardController {
   @ApiResponse({ status: 401, description: 'Invalid/expired token' })
   async fetchCountries(@Req() req: Request) {
     return this.giftcardService.getCountries();
+  }
+
+  @Get('products')
+  @HttpCode(200)
+  @ApiOperation({ summary: 'Get gift-card products with optional filters' })
+  @ApiQuery({
+    name: 'size',
+    required: false,
+    type: Number,
+    description: 'Number of items per page',
+    example: 10,
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number (0-indexed)',
+    example: 0,
+  })
+  @ApiQuery({
+    name: 'productName',
+    required: false,
+    type: String,
+    description: 'Filter by product name (partial match)',
+    example: 'Amazon',
+  })
+  @ApiQuery({
+    name: 'countryCode',
+    required: false,
+    type: String,
+    description: 'Product country Code',
+    example: 'US',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'List of products',
+    type: [ProductDto], // or use a wrapper if paginated
+  })
+  @ApiResponse({ status: 404, description: 'Not found (if applicable)' })
+  @ApiResponse({ status: 500, description: 'External API error' })
+  async fetchProducts(
+    @Query('size') size?: number,
+    @Query('page') page?: number,
+    @Query('productName') productName?: string,
+    @Query('countryCode') countryCode?: string,
+  ) {
+    return this.giftcardService.getProducts(
+      size,
+      page,
+      productName,
+      countryCode,
+    );
   }
 
   @Get(':countryCode')
@@ -64,50 +130,11 @@ export class GiftcardController {
   @ApiResponse({
     status: 200,
     description: 'Array of categories',
-    type: [CategoryDto],  
+    type: [CategoryDto],
   })
   async fetchCategories(@Req() req: Request) {
     return this.giftcardService.getCategories();
   }
-
-@Get('products')
-@HttpCode(200)
-@ApiOperation({ summary: 'Get gift-card products with optional filters' })
-@ApiQuery({
-  name: 'size',
-  required: false,
-  type: Number,
-  description: 'Number of items per page',
-  example: 10,
-})
-@ApiQuery({
-  name: 'page',
-  required: false,
-  type: Number,
-  description: 'Page number (0-indexed)',
-  example: 0,
-})
-@ApiQuery({
-  name: 'productName',
-  required: false,
-  type: String,
-  description: 'Filter by product name (partial match)',
-  example: 'Amazon',
-})
-@ApiResponse({
-  status: 200,
-  description: 'List of products',
-  type: [ProductDto], // or use a wrapper if paginated
-})
-@ApiResponse({ status: 404, description: 'Not found (if applicable)' })
-@ApiResponse({ status: 500, description: 'External API error' })
-async fetchProducts(
-  @Query('size') size?: number,
-  @Query('page') page?: number,
-  @Query('productName') productName?: string,
-) {
-  return this.giftcardService.getProducts(size, page, productName);
-}
 
   @Get('product/:productId')
   @HttpCode(200)
@@ -128,10 +155,9 @@ async fetchProducts(
     @Param('productId') productId: string,
   ) {
     return this.giftcardService.getProductById(productId);
-  } 
+  }
 
-      
-  // continuation 
+  // continuation
   @Post('orders')
   @HttpCode(201)
   @UseGuards(AuthGuard) // Optional: Protect with auth to track user orders
@@ -142,11 +168,14 @@ async fetchProducts(
     description: 'Order created successfully',
     type: OrderResponseDto,
   })
-  @ApiResponse({ status: 400, description: 'Invalid request or insufficient balance' })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid request or insufficient balance',
+  })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async createOrder(@Body() dto: CreateOrderDto, @Req() req: Request) {
-    const userId = req.user?.id
-    console.log(userId)
+    const userId = req.user?.id;
+    console.log(userId);
     return this.giftcardService.createOrder(dto);
   }
 
