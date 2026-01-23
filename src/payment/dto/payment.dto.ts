@@ -36,7 +36,15 @@ export class HitPayPaymentPayload {
   })
   @IsUrl()
   @IsOptional()
-  redirectUrl?: string;;
+  redirectUrl?: string;
+
+  @ApiPropertyOptional({
+    example: 'https://example.com/webhook',
+    description: 'Webhook URL for payment notifications',
+  })
+  @IsUrl()
+  @IsOptional()
+  webhookUrl?: string;
 
   @ApiPropertyOptional({
     example: 'Wallet funding',

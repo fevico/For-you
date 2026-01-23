@@ -25,7 +25,7 @@ export class Transaction {
   @Prop({type: String, required: true })
   transferId: string;
 
-  @Prop({ type: String, enum: ['scheduled', 'pending', 'processing', 'paid', 'failed', 'canceled'] })
+  @Prop({ type: String })
   status: string;
 
   @Prop({ type: String, required: false })
