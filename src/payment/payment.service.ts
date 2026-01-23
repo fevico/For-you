@@ -108,52 +108,53 @@ export class PaymentService {
   }
 
   // Call this from a controller / webhook route
-  async handleHitpayWebhook(event: any) {
-    const eventType = event.type;
-    const data = event.data;
+  async handleHitpayWebhook(payload: any) {
+  this.logger.log('Received HitPay webhook', payload);
 
-    this.logger.log(`Received HitPay webhook: ${eventType}`);
+  const {
+    reference_number,
+    status,
+    amount,
+    payment_id,
+    payment_request_id,
+  } = payload;
 
-    if (
-      eventType !== 'payment_request.completed' &&
-      eventType !== 'payment_request.failed' &&
-      eventType !== 'payment_request.expired'
-    ) {
-      return;
-    }
+  if (!reference_number || !status) {
+    this.logger.error('Invalid webhook payload', payload);
+    return;
+  }
 
-    const referenceNumber = data.reference_number;
-    const status = data.status;
+  const tx = await this.txModel.findOne({ referenceNumber: reference_number });
 
-    const tx = await this.txModel.findOne({ referenceNumber });
+  if (!tx) {
+    this.logger.error(`Transaction not found for reference ${reference_number}`);
+    return;
+  }
 
-    if (!tx) {
-      this.logger.error(`Transaction not found: ${referenceNumber}`);
-      return;
-    }
+  // 🛑 Prevent double-processing
+  if (tx.status === 'completed') {
+    this.logger.warn(`Transaction already completed: ${reference_number}`);
+    return;
+  }
 
-    // 🛑 Prevent double processing
-    if (tx.status === 'completed') {
-      return;
-    }
+  tx.status = status;
 
-    tx.status = status;
+  if (status === 'completed') {
+    tx.completedAt = new Date();
+  }
 
-    if (data.paid_at) {
-      tx.completedAt = new Date(data.paid_at);
-    }
+  await tx.save();
 
-    await tx.save();
-
-    // ✅ Credit user ONCE
-    if (status === 'completed') {
-      const user = await this.userModel.findById(tx.user);
-      if (user) {
-        user.balance += tx.amount;
-        await user.save();
-      }
+  // ✅ Credit wallet ONCE
+  if (status === 'completed') {
+    const user = await this.userModel.findById(tx.user);
+    if (user) {
+      user.balance += tx.amount;
+      await user.save();
     }
   }
+}
+
 
   private generateShortRef(length = 10) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

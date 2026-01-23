@@ -11,7 +11,7 @@ export class Transaction {
   user: Types.ObjectId;
 
   @Prop({type: String, required: true})
-  referenceNumber: string;
+  referenceNumber: string; 
 
   @Prop({type: String, required: true})
   email: string
