@@ -51,7 +51,7 @@ export class PaymentService {
 
   private async paymentRequest(
     payload: HitPayPaymentPayload,
-    userId: string
+    userId: string,
   ): Promise<HitPayPaymentResponse> {
     try {
       const reference_number = this.generateShortRef();
@@ -75,13 +75,15 @@ export class PaymentService {
         user: userId,
         name: response.data.name,
         email: response.data.email,
-        amount: parseInt(response.data.amount, 10),
+        amount: Number(response.data.amount.replace(/,/g, '')),
         referenceNumber: response.data.reference_number,
         purpose: response.data.purpose,
-        currency: response.data.currency
+        currency: response.data.currency,
+        status: response.data.status,
+        transferId: response.data.id,
       };
       const transaction = await this.txModel.create(data);
-      console.log("save transaction", transaction)
+      console.log('save transaction', transaction);
       return {
         id: response.data.id,
         url: response.data.url,
@@ -93,7 +95,10 @@ export class PaymentService {
     }
   }
 
-  async fundWallet(payload: HitPayPaymentPayload, userId: string): Promise<any> {
+  async fundWallet(
+    payload: HitPayPaymentPayload,
+    userId: string,
+  ): Promise<any> {
     try {
       const response = await this.paymentRequest(payload, userId);
       return response;
@@ -104,41 +109,48 @@ export class PaymentService {
 
   // Call this from a controller / webhook route
   async handleHitpayWebhook(event: any) {
-    const eventType = event['type']; // depends on your webhook payload structure
-    const data = event['data'];
+    const eventType = event.type;
+    const data = event.data;
 
-    this.logger.log(`Received webhook: ${eventType}`, data);
+    this.logger.log(`Received HitPay webhook: ${eventType}`);
 
     if (
-      eventType === 'transfer.updated' ||
-      eventType === 'transfer.paid' ||
-      eventType === 'transfer.failed'
+      eventType !== 'payment_request.completed' &&
+      eventType !== 'payment_request.failed' &&
+      eventType !== 'payment_request.expired'
     ) {
-      const transferId = data.id;
-      const status = data.status;
+      return;
+    }
 
-      const tx = await this.txModel.findOne({ hitpayTransferId: transferId });
-      if (!tx) {
-        this.logger.error(`Transaction not found for transferId ${transferId}`);
-        return;
-      }
+    const referenceNumber = data.reference_number;
+    const status = data.status;
 
-      tx.status = status;
+    const tx = await this.txModel.findOne({ referenceNumber });
 
-      if (data['paid_at']) {
-        tx.completedAt = new Date(data['paid_at']);
-      }
+    if (!tx) {
+      this.logger.error(`Transaction not found: ${referenceNumber}`);
+      return;
+    }
 
-      await tx.save();
+    // 🛑 Prevent double processing
+    if (tx.status === 'completed') {
+      return;
+    }
 
-      // If transfer is paid, ensure user balance is correct
-      if (status === 'paid' || status === 'completed') {
-        const user = await this.userModel.findById(tx.user);
-        if (user) {
-          // You might check if you already credited this to avoid double-crediting
-          user.balance += tx.amount;
-          await user.save();
-        }
+    tx.status = status;
+
+    if (data.paid_at) {
+      tx.completedAt = new Date(data.paid_at);
+    }
+
+    await tx.save();
+
+    // ✅ Credit user ONCE
+    if (status === 'completed') {
+      const user = await this.userModel.findById(tx.user);
+      if (user) {
+        user.balance += tx.amount;
+        await user.save();
       }
     }
   }

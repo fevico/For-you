@@ -22,7 +22,10 @@ export class Transaction {
   @Prop({type: String, required: true })
   currency: string;
 
-  @Prop({ type: String, enum: ['scheduled', 'processing', 'paid', 'failed', 'canceled'], default: 'scheduled' })
+  @Prop({type: String, required: true })
+  transferId: string;
+
+  @Prop({ type: String, enum: ['scheduled', 'pending', 'processing', 'paid', 'failed', 'canceled'] })
   status: string;
 
   @Prop({ type: String, required: false })
