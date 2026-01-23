@@ -109,51 +109,37 @@ export class PaymentService {
 
   // Call this from a controller / webhook route
   async handleHitpayWebhook(payload: any) {
-  this.logger.log('Received HitPay webhook', payload);
+      const { reference_number, status } = payload;
 
-  const {
-    reference_number,
-    status,
-    amount,
-    payment_id,
-    payment_request_id,
-  } = payload;
+    const tx = await this.txModel.findOne({ referenceNumber: reference_number });
 
-  if (!reference_number || !status) {
-    this.logger.error('Invalid webhook payload', payload);
-    return;
-  }
+    if (!tx) {
+      this.logger.error(`Transaction not found: ${ reference_number}`);
+      return;
+    }
 
-  const tx = await this.txModel.findOne({ referenceNumber: reference_number });
+    // 🛑 Prevent double processing
+    if (tx.status === 'completed') {
+      return;
+    }
 
-  if (!tx) {
-    this.logger.error(`Transaction not found for reference ${reference_number}`);
-    return;
-  }
+    tx.status = status;
 
-  // 🛑 Prevent double-processing
-  if (tx.status === 'completed') {
-    this.logger.warn(`Transaction already completed: ${reference_number}`);
-    return;
-  }
+    if (payload.paid_at) {
+      tx.completedAt = new Date(payload.paid_at);
+    }
 
-  tx.status = status;
+    await tx.save();
 
-  if (status === 'completed') {
-    tx.completedAt = new Date();
-  }
-
-  await tx.save();
-
-  // ✅ Credit wallet ONCE
-  if (status === 'completed') {
-    const user = await this.userModel.findById(tx.user);
-    if (user) {
-      user.balance += tx.amount;
-      await user.save();
+    // ✅ Credit user ONCE
+    if (status === 'completed') {
+      const user = await this.userModel.findById(tx.user);
+      if (user) {
+        user.balance += tx.amount;
+        await user.save();
+      }
     }
   }
-}
 
 
   private generateShortRef(length = 10) {

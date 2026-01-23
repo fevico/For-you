@@ -12,6 +12,7 @@ import { HitPayPaymentPayload, HitPayPaymentResponse } from './dto/payment.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from 'src/guard/auth.guard';
 import type { Response } from 'express';
+import crypto from "crypto"
 
 @ApiTags('Payment')
 @Controller('payment')
@@ -38,17 +39,46 @@ export class PaymentController {
 
   @Post('webhook')
   @HttpCode(200) 
-  async handleWebhook(@Req() req: Request, @Res() res: Response) {
-    try {
-      const event = req.body;
+  // async handleWebhook(@Req() req: Request, @Res() res: Response) {
+  //   try {
+  //     const event = req.body;
 
-      await this.paymentService.handleHitpayWebhook(event);
+  //     await this.paymentService.handleHitpayWebhook(event);
 
-      // Always return 200 quickly
-      return res.json({ received: true });
-    } catch (error) {
-      // Still return 200 to avoid endless retries
-      return res.json({ received: true });
-    }
+  //     // Always return 200 quickly
+  //     return res.json({ received: true });
+  //   } catch (error) {
+  //     // Still return 200 to avoid endless retries
+  //     return res.json({ received: true });
+  //   }
+  // }
+  async handleHitpayWebhook(@Req() req: any, @Res() res: Response) {
+  const signature = req.headers['hitpay-signature'];
+  const rawPayload = req.rawBody;
+  const salt = process.env.WEBHOOK_SALT;
+  if(!salt) return res.status(400).send("Invalid salt")
+
+  if (!signature || !rawPayload) {
+    return res.status(400).send('Invalid webhook');
+  }
+
+  const isValid = crypto
+    .createHmac('sha256', salt)
+    .update(rawPayload)
+    .digest('hex');
+
+  if (
+    !crypto.timingSafeEqual(
+      Buffer.from(isValid),
+      Buffer.from(signature),
+    )
+  ) {
+    return res.status(401).send('Invalid signature');
+  }
+
+  // ✅ SAFE TO TRUST req.body now
+  await this.paymentService.handleHitpayWebhook(req.body);
+
+  return res.send('OK');
   }
 }
