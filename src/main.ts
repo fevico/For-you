@@ -6,32 +6,22 @@ import * as bodyParser from 'body-parser';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-
   app.use(
     bodyParser.json({
-      verify: (req: any, res, buf) => {
-        req.rawBody = buf.toString();
+      verify: (req: any, res, buf: Buffer) => {
+        req.rawBody = buf;
       },
     }),
   );
 
-  app.use(
-    bodyParser.urlencoded({
-      extended: true,
-      verify: (req: any, res, buf) => {
-        req.rawBody = buf.toString();
-      },
-    }),
-  );
-
-    app.enableCors({
-    origin: "*",
+  app.enableCors({
+    origin: '*',
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    });
-    
-    const config = new DocumentBuilder()
+  });
+
+  const config = new DocumentBuilder()
     .setTitle('4You API')
     .setDescription('The 4You API description')
     .setVersion('1.0')

@@ -6,17 +6,20 @@ import {
   Req,
   Res,
   UseGuards,
+  Logger
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
 import { HitPayPaymentPayload, HitPayPaymentResponse } from './dto/payment.dto';
 import { ApiTags, ApiOperation, ApiBody, ApiResponse } from '@nestjs/swagger';
 import { AuthGuard } from 'src/guard/auth.guard';
-import type { Response } from 'express';
+import type { Response, Request } from 'express';
 import crypto from "crypto"
 
 @ApiTags('Payment')
 @Controller('payment')
 export class PaymentController {
+    private readonly logger = new Logger(PaymentController.name);
+  
   constructor(private readonly paymentService: PaymentService) {}
 
   @Post()
@@ -52,33 +55,43 @@ export class PaymentController {
   //     return res.json({ received: true });
   //   }
   // }
-  async handleHitpayWebhook(@Req() req: any, @Res() res: Response) {
-  const signature = req.headers['hitpay-signature'];
-  const rawPayload = req.rawBody;
+// Controller method (e.g., payment.controller.ts)
+// Use rawBody for signature validation as per HitPay docs (HMAC on raw JSON payload)
+// Ensure the verify middleware is set up as above to populate req.rawBody
+
+@Post('webhook')
+@HttpCode(200)
+async handleWebhook(@Req() req: any, @Res() res: Response) {
+  const signature = req.headers['hitpay-signature'] as string;
+  const rawPayload = req.rawBody;  // This should be a Buffer from the verify function
   const salt = process.env.WEBHOOK_SALT;
-  if(!salt) return res.status(400).send("Invalid salt")
+
+  if (!salt) {
+    this.logger.error('Missing WEBHOOK_SALT environment variable');
+    return res.status(500).send('Server configuration error');
+  }
 
   if (!signature || !rawPayload) {
+    this.logger.warn('Invalid webhook request: missing signature or payload');
     return res.status(400).send('Invalid webhook');
   }
 
-  const isValid = crypto
+  // Compute HMAC on raw payload (Buffer is fine for update())
+  const computedSignature = crypto
     .createHmac('sha256', salt)
     .update(rawPayload)
     .digest('hex');
 
-  if (
-    !crypto.timingSafeEqual(
-      Buffer.from(isValid),
-      Buffer.from(signature),
-    )
-  ) {
+  if (!crypto.timingSafeEqual(Buffer.from(computedSignature), Buffer.from(signature))) {
+    this.logger.warn('Invalid signature for webhook');
     return res.status(401).send('Invalid signature');
   }
 
-  // ✅ SAFE TO TRUST req.body now
+  // Signature valid: process the parsed body
+  this.logger.log('Webhook signature validated successfully');
   await this.paymentService.handleHitpayWebhook(req.body);
 
+  // Return 200 OK quickly to acknowledge
   return res.send('OK');
-  }
+}
 }

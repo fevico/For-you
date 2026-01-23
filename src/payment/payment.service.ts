@@ -108,39 +108,87 @@ export class PaymentService {
   }
 
   // Call this from a controller / webhook route
-  async handleHitpayWebhook(payload: any) {
-      const { reference_number, status } = payload;
+  // async handleHitpayWebhook(payload: any) {
+  //     const { reference_number, status } = payload;
 
-    const tx = await this.txModel.findOne({ referenceNumber: reference_number });
+  //   const tx = await this.txModel.findOne({ referenceNumber: reference_number });
+
+  //   if (!tx) {
+  //     this.logger.error(`Transaction not found: ${ reference_number}`);
+  //     return;
+  //   }
+
+  //   // 🛑 Prevent double processing
+  //   if (tx.status === 'completed') {
+  //     return;
+  //   }
+
+  //   tx.status = status;
+
+  //   if (payload.paid_at) {
+  //     tx.completedAt = new Date(payload.paid_at);
+  //   }
+
+  //   await tx.save();
+
+  //   // ✅ Credit user ONCE
+  //   if (status === 'completed') {
+  //     const user = await this.userModel.findById(tx.user);
+  //     if (user) {
+  //       user.balance += tx.amount;
+  //       await user.save();
+  //     }
+  //   }
+  // }
+
+  async handleHitpayWebhook(payload: any) {
+    const { reference_number, status, paid_at } = payload; // Destructure with paid_at if present
+
+    this.logger.log(
+      `Received webhook for ref: ${reference_number}, status: ${status}`,
+    );
+
+    const tx = await this.txModel.findOne({
+      referenceNumber: reference_number,
+    });
 
     if (!tx) {
-      this.logger.error(`Transaction not found: ${ reference_number}`);
+      this.logger.error(`Transaction not found: ${reference_number}`);
       return;
     }
 
-    // 🛑 Prevent double processing
-    if (tx.status === 'completed') {
+    // Prevent double processing
+    if (tx.status === 'completed' || tx.status === 'succeeded') {
+      this.logger.warn(`Transaction already processed: ${reference_number}`);
       return;
     }
 
     tx.status = status;
 
-    if (payload.paid_at) {
-      tx.completedAt = new Date(payload.paid_at);
+    if (paid_at) {
+      tx.completedAt = new Date(paid_at);
+    } else if (payload.updated_at) {
+      // Fallback if paid_at not present; use updated_at from examples
+      tx.completedAt = new Date(payload.updated_at);
     }
 
     await tx.save();
+    this.logger.log(
+      `Updated transaction status to ${status} for ${reference_number}`,
+    );
 
-    // ✅ Credit user ONCE
-    if (status === 'completed') {
+    // Credit user ONCE if successful
+    if (status === 'completed' || status === 'succeeded') {
       const user = await this.userModel.findById(tx.user);
       if (user) {
         user.balance += tx.amount;
         await user.save();
+        this.logger.log(`Credited user ${tx.user} with ${tx.amount}`);
+      } else {
+        this.logger.error(`User not found for tx: ${reference_number}`);
       }
     }
   }
-
 
   private generateShortRef(length = 10) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
