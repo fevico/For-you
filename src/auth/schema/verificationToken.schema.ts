@@ -11,7 +11,10 @@ export class VerificationToken {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   user: MongooseSchema.Types.ObjectId;
 
-  @Prop({ type: Date, default: Date.now, expires: 3600 }) // 1 hour from now
+  @Prop({type: String, required: true, enum: ["Password", "Email"], default:  "Email"})
+  type: "Email" | "Password" 
+
+  @Prop({ type: Date, default: Date.now, expires: 3600 }) 
   expiresAt: Date;
 }
 

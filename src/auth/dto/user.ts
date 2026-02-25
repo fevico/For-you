@@ -65,3 +65,43 @@ export class VerifyEmailDto {
   @IsString()
   userId: string;
 }
+export class ForgetPasswordDto {
+  @ApiProperty({
+    example: 'email@emaple.com',
+    description: 'User  registered email for password token',
+  })
+  @IsEmail()
+  email: string;
+}
+
+export class VerifyPasswordToken {
+  @ApiProperty({
+    example: '2078',
+    description: 'Password token received from email',
+  })
+  @IsString()
+  token: string;
+
+  @ApiProperty({
+    example: '456789ijhbvc',
+    description: 'id of the user who wants to change password',
+  })
+  @IsString()
+  userId: string;
+}
+
+export class ResetPassword {
+  @ApiProperty({
+    example: 'Password123',
+    description: 'New Password',
+  })
+  @IsString()
+  password: string;
+
+  @ApiProperty({
+    example: '456789ijhbvc',
+    description: 'id of the user who wants to change password',
+  })
+  @IsString()
+  userId: string;
+}

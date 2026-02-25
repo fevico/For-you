@@ -172,7 +172,7 @@ export class GiftcardService {
     } catch (error) {
       throw new Error('Failed to fetch products');
     }
-  }
+  }   
 
   async getProductById(productId: string): Promise<any> {
     const token = await this.getAccessToken();

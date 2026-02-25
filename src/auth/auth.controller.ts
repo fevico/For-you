@@ -1,7 +1,7 @@
 import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { CreateUserDto, LoginUserDto, VerifyEmailDto } from './dto/user';
+import { CreateUserDto, ForgetPasswordDto, LoginUserDto, VerifyEmailDto } from './dto/user';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -60,5 +60,13 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad request (validation error)' })
   async resendVerification(@Body() verifyEmailDto: VerifyEmailDto) {
     return this.authService.verifyEmail(verifyEmailDto);
+  }
+  @Post("forget-password")
+  @ApiOperation({ summary: 'Forget password' })
+  @ApiBody({ type: ForgetPasswordDto }) 
+  @ApiResponse({ status: 200, description: 'Password token sent to user email' })
+  @ApiResponse({ status: 400, description: 'Bad request (validation error)' })
+  async forgetPassword(@Body() forgetPasswordDto: ForgetPasswordDto) {
+    return this.authService.forgetPassword(forgetPasswordDto);
   }
 }

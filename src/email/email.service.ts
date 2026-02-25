@@ -67,7 +67,7 @@ export class EmailService {
       const html = this.getPasswordResetTemplate(name, resetCode);
       
       const { data, error } = await this.resend.emails.send({
-        from: 'Acme <onboarding@resend.dev>', // Replace with your domain
+        from: `${process.env.EMAIL_FROM}`, 
         to: [email],
         subject: 'Reset Your Password',
         html: html,
