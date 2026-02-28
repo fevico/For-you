@@ -105,3 +105,12 @@ export class ResetPassword {
   @IsString()
   userId: string;
 }
+
+export class ResendVerificationDto {
+  @ApiProperty({
+    example: 'johdoe@email.com',
+    description: 'Email of the user who want to request resend verification token',
+  })
+  @IsEmail()
+  email: string;
+}

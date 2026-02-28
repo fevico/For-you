@@ -1,7 +1,7 @@
 import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
-import { CreateUserDto, ForgetPasswordDto, LoginUserDto, VerifyEmailDto } from './dto/user';
+import { CreateUserDto, ForgetPasswordDto, LoginUserDto, ResendVerificationDto, VerifyEmailDto } from './dto/user';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -55,12 +55,13 @@ export class AuthController {
 
   @Post("resend-verification")
   @ApiOperation({ summary: 'Resend email verification token' })
-  @ApiBody({ type: VerifyEmailDto }) 
+  @ApiBody({ type: ResendVerificationDto }) 
   @ApiResponse({ status: 200, description: 'Verification email resent successfully' })
   @ApiResponse({ status: 400, description: 'Bad request (validation error)' })
-  async resendVerification(@Body() verifyEmailDto: VerifyEmailDto) {
-    return this.authService.verifyEmail(verifyEmailDto);
+  async resendVerification(@Body() verifyEmailDto: ResendVerificationDto) {
+    return this.authService.resendVerificatonToken(verifyEmailDto);
   }
+
   @Post("forget-password")
   @ApiOperation({ summary: 'Forget password' })
   @ApiBody({ type: ForgetPasswordDto }) 

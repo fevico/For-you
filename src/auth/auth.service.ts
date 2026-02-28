@@ -12,6 +12,7 @@ import {
   CreateUserDto,
   ForgetPasswordDto,
   LoginUserDto,
+  ResendVerificationDto,
   ResetPassword,
   VerifyEmailDto,
   VerifyPasswordToken,
@@ -145,6 +146,30 @@ export class AuthService {
       return { message: 'Email verified successfully' };
     } catch (error) {
       throw new UnauthorizedException('Email verification failed');
+    }
+  }
+
+  async resendVerificatonToken(body: ResendVerificationDto){
+    try {
+      const {email} = body
+      const user = await this.userModel.findOne({email})
+      if(!user) throw new UnauthorizedException("invalid credentials!")
+      const verificationCode = this.emailService.generateVerificationCode();
+    await this.verificationTokenModel.deleteMany({ userId: user._id }); // Remove old tokens if any
+    const hashedToken = await bcrypt.hash(verificationCode, 10);
+    const verificationToken = new this.verificationTokenModel({
+      user: user._id,
+      token: hashedToken,
+    });
+    await verificationToken.save();
+    await this.emailService.sendVerificationEmail(
+      email,
+      user.username,
+      verificationCode,
+    );
+    return {message: "Check your email for verification token", userId: user._id}
+    } catch (error) {
+      throw new HttpException(`Unable to send token to user`, HttpStatus.INTERNAL_SERVER_ERROR)
     }
   }
 
