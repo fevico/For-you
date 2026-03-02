@@ -1,7 +1,11 @@
-import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post, Req, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { AuthService } from './auth.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiBody } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBadRequestResponse, ApiOkResponse, ApiConsumes, ApiBearerAuth } from '@nestjs/swagger';
 import { CreateUserDto, ForgetPasswordDto, LoginUserDto, ResendVerificationDto, VerifyEmailDto } from './dto/user';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { IdentityUploadDto } from './dto/identity-upload';
+import { AuthGuard } from 'src/guard/auth.guard';
+import {Request} from "express"
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -42,6 +46,55 @@ export class AuthController {
       }
       throw new UnauthorizedException('Login failed');
     }
+  }
+
+ @Post('upload-identity') // better name than upload-id
+  @UseGuards(AuthGuard)
+  @UseInterceptors(
+    FileInterceptor('identity', {
+      limits: { fileSize: 6 * 1024 * 1024 }, // 6MB max
+      fileFilter: (_, file, cb) => {
+        if (!file.mimetype.match(/\/(jpg|jpeg|png|pdf)$/)) {
+          return cb(new BadRequestException('Only jpg, png, pdf allowed'), false);
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiBearerAuth() // shows lock icon in swagger if JWT
+  @ApiOperation({ summary: 'Upload user identity document (KYC)' })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Upload identity document (passport, driver license, etc.)',
+    type: IdentityUploadDto,
+  })
+  @ApiOkResponse({
+    description: 'Identity uploaded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        message: { type: 'string', example: 'Identity document uploaded and saved successfully' },
+        identity: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', example: 'https://res.cloudinary.com/...' },
+            public_id: { type: 'string', example: 'identities/1234567890-file.pdf' },
+          },
+        },
+      },
+    },
+  })
+  @ApiBadRequestResponse({ description: 'Invalid file or upload failed' })
+  async uploadUserIdentity(
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: any,
+  ) {
+    const userId = req.user?.id
+    if (!userId) {
+      throw new BadRequestException('Authentication required');
+    }
+
+    return this.authService.uploadIdentity(userId, file);
   }
 
   @Post("verify-email")

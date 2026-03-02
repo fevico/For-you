@@ -3,6 +3,7 @@ import {
   HttpException,
   HttpStatus,
   Injectable,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -24,6 +25,7 @@ import {
   VerificationToken,
   VerificationTokenDocument,
 } from './schema/verificationToken.schema';
+import { UploadsService } from 'src/uploads/uploads.service';
 
 export interface JwtPayload {
   sub: string; // User ID
@@ -38,6 +40,7 @@ export class AuthService {
     private verificationTokenModel: Model<VerificationTokenDocument>,
     private jwtService: JwtService,
     private emailService: EmailService,
+    private uploadsService: UploadsService
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -129,6 +132,7 @@ export class AuthService {
 
       const tokenExist = await this.verificationTokenModel.findOne({
         user: userId,
+        type: "Email"
       });
       if (!tokenExist) {
         throw new UnauthorizedException('Invalid or expired token');
@@ -142,11 +146,74 @@ export class AuthService {
       user.emailVerified = true;
       await user.save();
       await this.verificationTokenModel.deleteOne({ user: userId });
+      // generate jwt token and automatically sign in the user
+      const jwtToken = this.signToken(user._id);
 
-      return { message: 'Email verified successfully' };
+      return { message: 'Email verified successfully', jwtToken };
     } catch (error) {
       throw new UnauthorizedException('Email verification failed');
     }
+  }
+
+  async uploadIdentity(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<{ message: string; identity: User['identity'] }> {
+    if (!file || !file.buffer || file.buffer.length === 0) {
+      throw new BadRequestException('No valid file provided');
+    }
+
+    // 1. Find current user (to get old public_id if exists)
+    const user = await this.userModel.findById(userId).select('identity').exec();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const oldPublicId = user.identity?.public_id;
+
+    // 2. Upload new file to Cloudinary
+    const uploadResult = await this.uploadsService.uploadFile(file, 'identities'); // folder = 'identities'
+
+    // 3. Prepare new identity data
+    const newIdentity = {
+      url: uploadResult.secureUrl,
+      public_id: uploadResult.publicId,
+    };
+
+    // 4. Update user in DB (atomic replace of identity object)
+    const updatedUser = await this.userModel
+      .findByIdAndUpdate(
+        userId,
+        { $set: { identity: newIdentity } },
+        { new: true, runValidators: true },
+      )
+      .select('-password -__v') // exclude sensitive fields
+      .exec();
+
+    if (!updatedUser) {
+      // rollback: delete newly uploaded file if DB update failed
+      await this.uploadsService.deleteFile(uploadResult.publicId).catch(console.warn);
+      throw new BadRequestException('Failed to save identity reference');
+    }
+
+    // 5. Cleanup old file (non-blocking – don't fail the request if delete fails)
+    if (oldPublicId) {
+      this.uploadsService.deleteFile(oldPublicId).catch((err) => {
+        console.warn(`Failed to delete old identity file ${oldPublicId}:`, err.message);
+      });
+    }
+
+    return {
+      message: 'Identity document uploaded and saved successfully',
+      identity: updatedUser.identity,
+    };
+  }
+
+  // Optional helper if needed elsewhere
+  async getUserIdentity(userId: string) {
+    const user = await this.userModel.findById(userId).select('identity').exec();
+    if (!user) throw new NotFoundException('User not found');
+    return user.identity;
   }
 
   async resendVerificatonToken(body: ResendVerificationDto){
@@ -160,6 +227,7 @@ export class AuthService {
     const verificationToken = new this.verificationTokenModel({
       user: user._id,
       token: hashedToken,
+      type: "Email"
     });
     await verificationToken.save();
     await this.emailService.sendVerificationEmail(

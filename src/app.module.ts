@@ -8,6 +8,7 @@ import { GiftcardModule } from './giftcard/giftcard.module';
 import { PaymentModule } from './payment/payment.module';
 import { EmailModule } from './email/email.module';
 import { OrderModule } from './order/order.module';
+import { UploadsModule } from './uploads/uploads.module';
 import * as Joi  from "joi"
 
 @Module({
@@ -20,7 +21,7 @@ import * as Joi  from "joi"
       }),
      }),  // Loads .env globally
     MongooseModule.forRoot(process.env.MONGODB_URI!),  // Connects to MongoDB
-    AuthModule, GiftcardModule, PaymentModule, EmailModule, OrderModule,
+    AuthModule, GiftcardModule, PaymentModule, EmailModule, OrderModule, UploadsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

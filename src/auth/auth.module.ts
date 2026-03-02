@@ -6,6 +6,7 @@ import { User, UserSchema } from './schema/user.schema';
 import { JwtModule } from '@nestjs/jwt';
 import { EmailModule } from 'src/email/email.module';
 import { VerificationToken, VerificationTokenSchema } from './schema/verificationToken.schema';
+import { UploadsModule } from 'src/uploads/uploads.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { VerificationToken, VerificationTokenSchema } from './schema/verificatio
       signOptions: { expiresIn: '24h' },
     }),
     EmailModule,
+    UploadsModule
   ],
   providers: [AuthService],
   controllers: [AuthController]
