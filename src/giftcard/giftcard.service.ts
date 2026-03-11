@@ -262,6 +262,8 @@ export class GiftcardService {
     throw new BadRequestException('unitPrice is required and must be positive');
   }
 
+  // check users balance  
+
   const requestBody = {
     productId: dto.productId,
     quantity: dto.quantity || 1,          // Allow dynamic quantity
@@ -299,7 +301,7 @@ export class GiftcardService {
     this.logger.error(`Reloadly order failed: ${errText}`);
     throw new BadRequestException(
       `Order creation failed (${response.status}): ${errText}`,
-    );
+    ); 
   }
 
   const orderData = (await response.json()) as OrderResponseDto;

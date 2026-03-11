@@ -12,12 +12,15 @@ import {
 } from '@nestjs/common';
 import { GiftcardService } from './giftcard.service';
 import {
+  ApiBadRequestResponse,
   ApiBody,
+  ApiNotFoundResponse,
   ApiOperation,
   ApiParam,
   ApiQuery,
   ApiResponse,
   ApiTags,
+  ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
 import {
   CategoryDto,
@@ -44,6 +47,16 @@ export class GiftcardController {
     type: [CountryDto],
   })
   @ApiResponse({ status: 401, description: 'Invalid/expired token' })
+  @ApiResponse({
+  description: 'Failed to fetch countries from Reloadly',
+  schema: {
+    example: {
+      statusCode: 500,
+      message: 'Countries request failed',
+      error: 'Internal Server Error'
+    }
+  }
+})
   async fetchCountries(@Req() req: Request) {
     return this.giftcardService.getCountries();
   }
@@ -85,8 +98,17 @@ export class GiftcardController {
     type: [ProductDto], // or use a wrapper if paginated
   })
   @ApiResponse({ status: 404, description: 'Not found (if applicable)' })
-  @ApiResponse({ status: 500, description: 'External API error' })
-  async fetchProducts(
+@ApiResponse({
+  description: 'Failed to fetch products',
+  schema: {
+    example: {
+      statusCode: 500,
+      message: 'Failed to fetch products',
+      error: 'Internal Server Error'
+    }
+  }
+})
+async fetchProducts(
     @Query('size') size?: number,
     @Query('page') page?: number,
     @Query('productName') productName?: string,
@@ -168,12 +190,27 @@ export class GiftcardController {
     description: 'Order created successfully',
     type: OrderResponseDto,
   })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid request or insufficient balance',
-  })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async createOrder(@Body() dto: CreateOrderDto, @Req() req: Request) {
+@ApiBadRequestResponse({
+  description: 'Invalid request or order failed',
+  schema: {
+    example: {
+      statusCode: 400,
+      message: 'unitPrice is required and must be positive',
+      error: 'Bad Request'
+    }
+  }
+})
+
+@ApiUnauthorizedResponse({
+  description: 'Unauthorized',
+  schema: {
+    example: {
+      statusCode: 401,
+      message: 'Unauthorized'
+    }
+  }
+})
+async createOrder(@Body() dto: CreateOrderDto, @Req() req: Request) {
     const userId = req.user?.id;
     console.log(userId);
     return this.giftcardService.createOrder(dto);
@@ -192,8 +229,19 @@ export class GiftcardController {
     description: 'Redemption steps',
     type: RedeemInstructionsDto,
   })
-  @ApiResponse({ status: 404, description: 'Product not found' })
-  async getRedeemInstructions(@Param('productId') productId: string) {
+@ApiBadRequestResponse({
+  description: 'Failed to fetch redemption instructions',
+  schema: {
+    example: {
+      statusCode: 400,
+      message: 'Redeem instructions fetch failed'
+    }
+  }
+})
+
+@ApiNotFoundResponse({
+  description: 'Product not found'
+})  async getRedeemInstructions(@Param('productId') productId: string) {
     return this.giftcardService.getRedeemInstructions(productId);
   }
 }
