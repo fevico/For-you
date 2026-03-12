@@ -101,27 +101,67 @@ export class GiftcardService {
     return response.json();
   }
 
-  async getByCountryCode(countryCode: string): Promise<any> {
-    const token = await this.getAccessToken();
-    const url = `https://giftcards-sandbox.reloadly.com/countries/${countryCode}`;
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: {
-        Accept: 'application/com.reloadly.giftcards-v1+json',
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  // async getByCountryCode(countryCode: string): Promise<any> {
+  //   const token = await this.getAccessToken();
+  //   const url = `https://giftcards-sandbox.reloadly.com/countries/${countryCode}/products`;
+  //   const response = await fetch(url, {
+  //     method: 'GET', 
+  //     headers: {
+  //       Accept: 'application/com.reloadly.giftcards-v1+json',
+  //       Authorization: `Bearer ${token}`,
+  //     },
+  //   });
 
-    if (!response.ok) {
-      const errText = await response.text();
-      throw new Error(
-        `Categories request failed (${response.status}): ${errText}`,
-      );
-    }
+  //   if (!response.ok) {
+  //     const errText = await response.text();
+  //     throw new Error(
+  //       `Categories request failed (${response.status}): ${errText}`,
+  //     );
+  //   }
 
-    return response.json();
+  //   return response.json();
+  // }
+
+  async getByCountryCode(
+  countryCode: string,
+  page: number = 1,
+  limit: number = 10,
+): Promise<any> {
+
+  const token = await this.getAccessToken();
+
+  const url = `https://giftcards-sandbox.reloadly.com/countries/${countryCode}/products`;
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      Accept: 'application/com.reloadly.giftcards-v1+json',
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(
+      `Categories request failed (${response.status}): ${errText}`,
+    );
   }
 
+  const products = await response.json();
+
+  const startIndex = (page - 1) * limit;
+  const endIndex = startIndex + limit;
+
+  const paginatedData = products.slice(startIndex, endIndex);
+
+  return {
+    page,
+    limit,
+    total: products.length,
+    totalPages: Math.ceil(products.length / limit),
+    data: paginatedData,
+  };
+}
   async getCategories(): Promise<any> {
     const token = await this.getAccessToken();
 
